@@ -1,0 +1,16 @@
+
+.vs/2D_setka_construct/v16/
+
+*.sln
+
+*.vcxproj
+
+*.filters
+
+*.user
+
+All_yzel.txt
+
+*.tlog
+
+Debug/

@@ -13,5 +13,7 @@ int main()
     S.Print_yzel();
     S.Print_cell();
 
+    cout << "All cell = " << S.All_Cell.size() << endl;
+
 
 }

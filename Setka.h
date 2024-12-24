@@ -20,9 +20,8 @@ public:
 	vector<Luch*> C_Luch;
 	vector<Luch*> D_Luch;
 	vector<Luch*> E_Luch;
-	vector<Luch*> F_Luch;  // Он такой один
-	vector<Yzel*> Yzel_zav_1;   // Узлы с зависимостью 1 (т.е. опредляются только координатами основных узлов)
-	vector<Luch*> G_Luch;  // Он такой один
+	vector<Luch*> H_Luch;
+	vector<Luch*> G_Luch;
 
 	vector<Cell*> All_Cell;
 

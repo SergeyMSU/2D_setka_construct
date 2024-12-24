@@ -18,18 +18,19 @@ void Setka::Set_geo()
     this->geo.tetta0 = const_pi / 18;
     this->geo.tetta1 = const_pi - const_pi / 12;
     this->geo.tetta2 = const_pi * 120.0 / 180.0;
-    this->geo.N1 = 28;
-    this->geo.N2 = 26;
-    this->geo.N3 = 25;
-    this->geo.N4 = 26;
-    this->geo.N5 = 25;
+    this->geo.N1 = 20;
+    this->geo.N2 = 10;
+    this->geo.N3 = 15; //10
+    this->geo.N4 = 10;
+    this->geo.N5 = 8;
 
-    this->geo.M0 = 26;
-    this->geo.M1 = 25;
+    this->geo.M0 = 14;//14;
+    this->geo.M1 = 15;//15;
     this->geo.M11 = 3;
-    this->geo.M2 = 27;
-    this->geo.M3 = 23;
-    this->geo.M4 = 23;
+    this->geo.M2 = 10;//10;
+    this->geo.M3 = 20;
+    this->geo.M4 = 30;
+    this->geo.MF = 5;//4;
 
     this->geo.R0 = 1.0;
     this->geo.R1 = 3.0;
@@ -39,6 +40,18 @@ void Setka::Set_geo()
     this->geo.R5 = 20.0;
     this->geo.L6 = -10.0;
     this->geo.L7 = -20.0;
+
+    this->geo.dd1 = 4.0;    // У этих величин реализован автоматический подбор
+    this->geo.dd2 = 2.0;    // У этих величин реализован автоматический подбор
+
+    this->geo.dd3 = 2.2;
+    this->geo.dd4 = 2.2;
+
+    this->geo.dd5 = 2.3;
+    this->geo.dd6 = 3.0;
+
+    this->geo.dd7 = 3.8;
+    this->geo.dd8 = 5.3;
 }
 
 void Setka::Construct_initial()
@@ -253,10 +266,10 @@ void Setka::Construct_initial()
         // Делаем непрямые лучи
         double x0, y0, x1, y1, t1, t2, tt1, tt2;
 
-        t1 = cos(the) * 2.0;
-        tt1 = sin(the) * 2.0;
+        t1 = cos(the) * this->geo.dd3;
+        tt1 = sin(the) * this->geo.dd3;
         t2 = 0.0;
-        tt2 = 1.0 * 3;
+        tt2 = 1.0 * this->geo.dd4;
         x0 = x;        // Это координаты с последней итерации цикла
         y0 = y;
         x1 = x;
@@ -424,9 +437,17 @@ void Setka::Construct_initial()
         // Делаем непрямые лучи
         double x0, y0, x1, y1, t1, t2, tt1, tt2;
 
-        t1 = cos(the) * 3;
-        tt1 = sin(the) * 3;
-        t2 = -1.0 * 3.0;
+        if (i == 0)
+        {
+            t1 = (4 * cos(the) - 6 * 1.0) / 10.0 * this->geo.dd5;
+            tt1 = sin(the) * this->geo.dd5;
+        }
+        else
+        {
+            t1 = (cos(the) - 1.0) / 2.0 * this->geo.dd5;
+            tt1 = sin(the) * this->geo.dd5;
+        }
+        t2 = -1.0 * this->geo.dd6;
         tt2 = 0.0;
         x0 = x;        // Это координаты с последней итерации цикла
         y0 = y;
@@ -681,159 +702,67 @@ void Setka::Construct_initial()
 
     }
 
-
-    // Заполняем один F-луч
-    for (int i = 0; i < 1; i++)
+    // Добавляем H-лучи
+    for (int i = 0; i < this->geo.MF - 1; i++)
     {
+        the = 0.0;
         auto A = new Luch();
-        this->All_Luch.push_back(A);
-        this->F_Luch.push_back(A);
         A->phi = this->geo.phi;
-        A->the = 0.0;
-        A->type = "F";
-        double x0, y0, z0, x1, y1, z1;
-        auto yz1 = this->D_Luch[0]->Yzels[2];
-        auto yz2 = this->B_Luch[size(this->B_Luch) - 1]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 3];
-        x0 = yz2->coord[0][0];
-        y0 = yz2->coord[0][1];
-        z0 = yz2->coord[0][2];
+        A->the = the;
+        A->type = "H";
+        this->All_Luch.push_back(A);
+        this->H_Luch.push_back(A);
 
-        x1 = yz1->coord[0][0];
-        y1 = yz1->coord[0][1];
-        z1 = yz1->coord[0][2];
+        int nn = this->B_Luch.size();
+        auto yz1 = this->B_Luch[nn - 1]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 2 + i];
+        auto yz3 = this->B_Luch[nn - 2]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 2 + i];
+        auto yz2 = this->D_Luch[0]->Yzels[1 + i];
+        auto yz4 = this->D_Luch[1]->Yzels[1 + i];
 
-        A->Yzels.push_back(yz2);
-        A->Yzels_opor.push_back(yz2);
+        A->Yzels.push_back(yz1);
+        A->Yzels_opor.push_back(yz1);
+
+        // Делаем непрямые лучи
+        double x0, y0, x1, y1, t1, t2, tt1, tt2;
+
+        t1 = (yz1->coord[0][0] - yz3->coord[0][0]) * this->geo.dd7;
+        tt1 = (yz1->coord[0][1] - yz3->coord[0][1]) * this->geo.dd7;
+        t2 = (yz4->coord[0][0] - yz2->coord[0][0]) * this->geo.dd8;
+        tt2 = (yz4->coord[0][1] - yz2->coord[0][1]) * this->geo.dd8;
+        x0 = yz1->coord[0][0];        // Это координаты с последней итерации цикла
+        y0 = yz1->coord[0][1];
+        x1 = yz2->coord[0][0];        // Это координаты с последней итерации цикла
+        y1 = yz2->coord[0][1];
+
+        double a1, b1, c1, d1, a2, b2, c2, d2;
+
+        a1 = x0;
+        b1 = t1;
+        c1 = -2 * t1 - t2 - 3.0 * x0 + 3.0 * x1;
+        d1 = t1 + t2 + 2.0 * x0 - 2.0 * x1;
+
+        a2 = y0;
+        b2 = tt1;
+        c2 = -2 * tt1 - tt2 - 3.0 * y0 + 3.0 * y1;
+        d2 = tt1 + tt2 + 2.0 * y0 - 2.0 * y1;
+
 
         for (int j = 0; j < 4; j++)
         {
-            x = x0 + (j + 1) * (x1 - x0) / 5;
-            y = y0 + (j + 1) * (y1 - y0) / 5;
-            z = z0 + (j + 1) * (z1 - z0) / 5;
+            double s = 1.0 * (j + 1) / (5);
+            x = a1 + b1 * s + c1 * s * s + d1 * s * s * s;
+            y = a2 + b2 * s + c2 * s * s + d2 * s * s * s;
+            z = y * sin(A->phi);
+            y = y * cos(A->phi);
             auto Yz = new Yzel(x, y, z);
             A->Yzels.push_back(Yz);
             this->All_Yzel.push_back(Yz);
             Yz->luch = A;
         }
 
-        A->Yzels.push_back(yz1);
-        A->Yzels_opor.push_back(yz1);
+        A->Yzels.push_back(yz2);
+        A->Yzels_opor.push_back(yz2);
     }
-
-
-    // Добавляем зависимых узлов
-
-    if (true)
-    {
-        // 1
-        auto yz3 = this->B_Luch[size(this->B_Luch) - 1]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 2];
-        auto yz2 = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 1];
-        auto yz1 = this->F_Luch[0]->Yzels[1];
-
-        /*cout << yz1->coord[0][0] << " " << yz1->coord[0][1] << " " << yz1->coord[0][2] << endl;
-        cout << yz2->coord[0][0] << " " << yz2->coord[0][1] << " " << yz2->coord[0][2] << endl;
-        cout << yz3->coord[0][0] << " " << yz3->coord[0][1] << " " << yz3->coord[0][2] << endl;*/
-
-        auto Yz = new Yzel((2.0 / 4.0 * yz1->coord[0][0] + 2.0 / 4.0 * yz2->coord[0][0] + 0.0 / 5.0 * yz3->coord[0][0]),
-            (2.0 / 4.0 * yz1->coord[0][1] + 2.0 / 4.0 * yz2->coord[0][1] + 0.0 / 5.0 * yz3->coord[0][1]),
-            (2.0 / 4.0 * yz1->coord[0][2] + 2.0 / 4.0 * yz2->coord[0][2] + 0.0 / 5.0 * yz3->coord[0][2]));
-        this->All_Yzel.push_back(Yz);
-        this->Yzel_zav_1.push_back(Yz);
-        Yz->zavisimost = 1;
-        Yz->zav_koeff.push_back(2.0 / 4.0);
-        Yz->zav_koeff.push_back(2.0 / 4.0);
-        //Yz->zav_koeff.push_back(1.0 / 3.0);
-        Yz->zav_yzels.push_back(yz1);
-        Yz->zav_yzels.push_back(yz2);
-        //Yz->zav_yzels.push_back(yz3);
-
-        // 2
-        yz1 = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 2];
-        yz2 = this->F_Luch[0]->Yzels[2];
-
-
-        Yz = new Yzel((2.0 / 4.0 * yz1->coord[0][0] + 2.0 / 4.0 * yz2->coord[0][0]),
-            (2.0 / 4.0 * yz1->coord[0][1] + 2.0 / 4.0 * yz2->coord[0][1]),
-            (2.0 / 4.0 * yz1->coord[0][2] + 2.0 / 4.0 * yz2->coord[0][2]));
-        this->All_Yzel.push_back(Yz);
-        this->Yzel_zav_1.push_back(Yz);
-        Yz->zavisimost = 1;
-        Yz->zav_koeff.push_back(2.0 / 4.0);
-        Yz->zav_koeff.push_back(2.0 / 4.0);
-        Yz->zav_yzels.push_back(yz1);
-        Yz->zav_yzels.push_back(yz2);
-
-        // 3
-        yz1 = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 3];
-        yz2 = this->F_Luch[0]->Yzels[3];
-
-
-        Yz = new Yzel((2.0 / 4.0 * yz1->coord[0][0] + 2.0 / 4.0 * yz2->coord[0][0]),
-            (2.0 / 4.0 * yz1->coord[0][1] + 2.0 / 4.0 * yz2->coord[0][1]),
-            (2.0 / 4.0 * yz1->coord[0][2] + 2.0 / 4.0 * yz2->coord[0][2]));
-        this->All_Yzel.push_back(Yz);
-        this->Yzel_zav_1.push_back(Yz);
-        Yz->zavisimost = 1;
-        Yz->zav_koeff.push_back(2.0 / 4.0);
-        Yz->zav_koeff.push_back(2.0 / 4.0);
-        Yz->zav_yzels.push_back(yz1);
-        Yz->zav_yzels.push_back(yz2);
-
-        // 4
-        yz1 = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 4];
-        yz2 = this->F_Luch[0]->Yzels[4];
-
-
-        Yz = new Yzel((2.0 / 4.0 * yz1->coord[0][0] + 2.0 / 4.0 * yz2->coord[0][0]),
-            (2.0 / 4.0 * yz1->coord[0][1] + 2.0 / 4.0 * yz2->coord[0][1]),
-            (2.0 / 4.0 * yz1->coord[0][2] + 2.0 / 4.0 * yz2->coord[0][2]));
-        this->All_Yzel.push_back(Yz);
-        this->Yzel_zav_1.push_back(Yz);
-        Yz->zavisimost = 1;
-        Yz->zav_koeff.push_back(2.0 / 4.0);
-        Yz->zav_koeff.push_back(2.0 / 4.0);
-        Yz->zav_yzels.push_back(yz1);
-        Yz->zav_yzels.push_back(yz2);
-
-        // 5  этот узел не создаётся, а просто двигается
-        
-        /*yz1 = this->B_Luch[size(this->B_Luch) - 1]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 1];
-        yz2 = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 2];
-        yz3 = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11];
-
-
-        Yz = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 1];
-        this->Yzel_zav_1.push_back(Yz);
-        Yz->zavisimost = 1;
-        Yz->coord[0][0] = Yz->coord[1][0] = (1.0 / 5.0 * yz1->coord[0][0] + 2.0 / 5.0 * yz2->coord[0][0] + 2.0 / 5.0 * yz3->coord[0][0]);
-        Yz->coord[0][1] = Yz->coord[1][1] = (1.0 / 5.0 * yz1->coord[0][1] + 2.0 / 5.0 * yz2->coord[0][1] + 2.0 / 5.0 * yz3->coord[0][1]);
-        Yz->coord[0][2] = Yz->coord[1][2] = (1.0 / 5.0 * yz1->coord[0][2] + 2.0 / 5.0 * yz2->coord[0][2] + 2.0 / 5.0 * yz3->coord[0][2]);
-        Yz->zav_koeff.push_back(1.0 / 5.0);
-        Yz->zav_koeff.push_back(2.0 / 5.0);
-        Yz->zav_koeff.push_back(2.0 / 5.0);
-        Yz->zav_yzels.push_back(yz1);
-        Yz->zav_yzels.push_back(yz2);
-        Yz->zav_yzels.push_back(yz3);*/
-
-        // 6  этот узел не создаётся, а просто двигается
-
-        /*yz1 = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 1];
-        yz2 = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 - 1];
-
-
-        Yz = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11];
-        this->Yzel_zav_1.push_back(Yz);
-        Yz->zavisimost = 1;
-        Yz->coord[0][0] = Yz->coord[1][0] = (1.0 / 2.0 * yz1->coord[0][0] + 2.0 / 4.0 * yz2->coord[0][0]);
-        Yz->coord[0][1] = Yz->coord[1][1] = (1.0 / 2.0 * yz1->coord[0][1] + 2.0 / 4.0 * yz2->coord[0][1]);
-        Yz->coord[0][2] = Yz->coord[1][2] = (1.0 / 2.0 * yz1->coord[0][2] + 2.0 / 4.0 * yz2->coord[0][2]);
-        Yz->zav_koeff.push_back(1.0 / 2.0);
-        Yz->zav_koeff.push_back(2.0 / 4.0);
-        Yz->zav_yzels.push_back(yz1);
-        Yz->zav_yzels.push_back(yz2);*/
-
-    }
-
 
     // Добавляем G-лучи
     for (int i = 0; i < 4; i++)
@@ -846,32 +775,126 @@ void Setka::Construct_initial()
         this->All_Luch.push_back(A);
         this->G_Luch.push_back(A);
 
-        auto yz1 = this->F_Luch[0]->Yzels[i + 1];
+        int k = this->H_Luch.size();
+
+        auto yz1 = this->H_Luch[k - 1]->Yzels[i + 1];
         auto yz2 = this->E_Luch[i]->Yzels_opor[0];
+        auto yz3 = this->H_Luch[k - 2]->Yzels[i + 1];
+
+        auto yz4 = this->B_Luch[this->B_Luch.size() - 1]->Yzels[this->geo.M0 + 1 + geo.M1 + 1 + geo.M2];
+        auto yz5 = this->B_Luch[this->B_Luch.size() - 1]->Yzels[this->geo.M0 + 1 + geo.M1 + 1 + geo.M2 - 1];
 
         double x, y, r;
 
-        
         A->Yzels.push_back(yz1);
         A->Yzels_opor.push_back(yz1);
 
+        // Делаем непрямые лучи
+        double x0, y0, x1, y1, t1, t2, tt1, tt2;
 
-        // Точки
-        for (int j = 0; j < this->geo.M2 - 5; j++)
+        // Для подбора коэффициентов
+        double l1 = sqrt(kv((yz1->coord[0][0] - yz3->coord[0][0])) +
+            kv((yz1->coord[0][1] - yz3->coord[0][1])));
+        double l3 = sqrt(kv((yz4->coord[0][0] - yz5->coord[0][0])) +
+            kv((yz4->coord[0][1] - yz5->coord[0][1])));
+
+        double a1, b1, c1, d1, a2, b2, c2, d2;
+        bool goto_aa1;
+
+    aa1:
+        goto_aa1 = false;
+        t1 = (yz1->coord[0][0] - yz3->coord[0][0]) * this->geo.dd1;
+        tt1 = (yz1->coord[0][1] - yz3->coord[0][1]) * this->geo.dd1;
+        t2 = 0.0;
+        tt2 = 1.0 * this->geo.dd2;
+        x0 = yz1->coord[0][0];        // Это координаты с последней итерации цикла
+        y0 = yz1->coord[0][1];
+        x1 = yz2->coord[0][0];
+        y1 = yz2->coord[0][1];
+
+        
+
+        a1 = x0;
+        b1 = t1;
+        c1 = -2 * t1 - t2 - 3.0 * x0 + 3.0 * x1;
+        d1 = t1 + t2 + 2.0 * x0 - 2.0 * x1;
+
+        a2 = y0;
+        b2 = tt1;
+        c2 = -2 * tt1 - tt2 - 3.0 * y0 + 3.0 * y1;
+        d2 = tt1 + tt2 + 2.0 * y0 - 2.0 * y1;
+
+        // Точки от R2 (TS) до R3 (HP)
+        for (int j = 0; j < this->geo.M2 - this->geo.M11 - this->geo.MF + 1; j++)
         {
-            x = yz1->coord[0][0] + (j + 1) * (yz2->coord[0][0] - yz1->coord[0][0]) / (this->geo.M2 - 5 + 1);
-            y = yz1->coord[0][1] + (j + 1) * (yz2->coord[0][1] - yz1->coord[0][1]) / (this->geo.M2 - 5 + 1);
-            z = yz1->coord[0][2] + (j + 1) * (yz2->coord[0][2] - yz1->coord[0][2]) / (this->geo.M2 - 5 + 1);
+            double s = 1.0 * (j + 1.0) / (this->geo.M2 - this->geo.M11 - this->geo.MF + 1 + 1.0);
+            x = a1 + b1 * s + c1 * s * s + d1 * s * s * s;
+            y = a2 + b2 * s + c2 * s * s + d2 * s * s * s;
 
+            // Подбор геометрических коэффициентов
+            if (i == 0 && j == 0) 
+            {
+                double l2 = sqrt(kv(x - x0) + kv(y - y0));
+                if (fabs(l2 - l1) / l1 * 100.0 > 2.0)
+                {
+                    if (l2 < l1)
+                    {
+                        this->geo.dd1 *= 1.01;
+                    }
+                    else
+                    {
+                        this->geo.dd1 *= 0.99;
+                    }
+                    //cout << "1 " << l1 << " " << l2 << " " << this->geo.dd1 << endl;
+                    //system("pause");
+                    goto_aa1 = true;
+                    break;
+                }
+
+                double xx, yy, ss;
+                ss = 1.0 * (this->geo.M2 - this->geo.M11 - this->geo.MF + 1) / (this->geo.M2 - this->geo.M11 - this->geo.MF + 1 + 1.0);
+                xx = a1 + b1 * ss + c1 * ss * ss + d1 * ss * ss * ss;
+                yy = a2 + b2 * ss + c2 * ss * ss + d2 * ss * ss * ss;
+                double l4 = sqrt(kv(xx - x1) + kv(yy - y1));
+                if (fabs(l4 - l3) / l1 * 100.0 > 2.0)
+                {
+                    if (l4 < l3)
+                    {
+                        this->geo.dd2 *= 1.01;
+                    }
+                    else
+                    {
+                        this->geo.dd2 *= 0.99;
+                    }
+                    //cout << "2 " << l3 << " " << l4 << " " << this->geo.dd2 << endl;
+                    //system("pause");
+                    goto_aa1 = true;
+                    break;
+                }
+
+            }
+
+
+            z = y * sin(A->phi);
+            y = y * cos(A->phi);
             auto Yz = new Yzel(x, y, z);
             A->Yzels.push_back(Yz);
             this->All_Yzel.push_back(Yz);
             Yz->luch = A;
         }
 
+        if (goto_aa1 == true)
+        {
+            goto aa1;
+        }
+
+
         A->Yzels.push_back(yz2);
         A->Yzels_opor.push_back(yz2);
     }
+
+
+
 
     // Заполняем ячейки 
     // /////////////////////////////////////////////////////////////////////////////////////////////
@@ -984,6 +1007,24 @@ void Setka::Construct_initial()
     }
 
 
+    // H - лучи
+
+    n1 = this->H_Luch.size();
+
+    for (int i = 0; i < n1 - 1; i++)
+    {
+        int n2 = this->H_Luch[i]->Yzels.size();
+        for (int j = 0; j < n2 - 1; j++)
+        {
+            auto A = new Cell();
+            A->Yzels.push_back(this->H_Luch[i]->Yzels[j]);
+            A->Yzels.push_back(this->H_Luch[i + 1]->Yzels[j]);
+            A->Yzels.push_back(this->H_Luch[i + 1]->Yzels[j + 1]);
+            A->Yzels.push_back(this->H_Luch[i]->Yzels[j + 1]);
+            this->All_Cell.push_back(A);
+        }
+    }
+
 
     // BC - склейка
     for (int j = 0; j < this->geo.M0 + this->geo.M1 + this->geo.M11 + 1; j++)
@@ -1013,7 +1054,7 @@ void Setka::Construct_initial()
     for (int j = 0; j < this->E_Luch[0]->Yzels.size() - 1; j++)
     {
         int k = this->B_Luch.size();
-        int nn = this->geo.M0 + this->geo.M1 + this->geo.M11 + this->geo.M2 - 1;
+        int nn = this->geo.M0 + this->geo.M1 + this->geo.M2 + 2;
         auto A = new Cell();
         A->Yzels.push_back(this->B_Luch[k - 1]->Yzels[nn + j]);
         A->Yzels.push_back(this->B_Luch[k - 1]->Yzels[nn + j + 1]);
@@ -1026,7 +1067,7 @@ void Setka::Construct_initial()
     for (int j = 0; j < this->E_Luch[0]->Yzels.size() - 1; j++)
     {
         int k = this->E_Luch.size();
-        int nn = this->geo.M2 - 2;
+        int nn = this->geo.M2 - this->geo.M11 + 1;
         auto A = new Cell();
         A->Yzels.push_back(this->E_Luch[k - 1]->Yzels[j]);
         A->Yzels.push_back(this->E_Luch[k - 1]->Yzels[j + 1]);
@@ -1040,7 +1081,7 @@ void Setka::Construct_initial()
     for (int j = 0; j < this->G_Luch[0]->Yzels.size() - 1; j++)
     {
         int k = this->B_Luch.size();
-        int nn = this->geo.M0 + this->geo.M1 + this->geo.M11 + 3;
+        int nn = this->geo.M0 + this->geo.M1 + this->geo.M11 + this->geo.MF;
         auto A = new Cell();
         A->Yzels.push_back(this->B_Luch[k - 1]->Yzels[nn + j]);
         A->Yzels.push_back(this->B_Luch[k - 1]->Yzels[nn + j + 1]);
@@ -1053,7 +1094,7 @@ void Setka::Construct_initial()
     for (int j = 0; j < this->G_Luch[0]->Yzels.size() - 2; j++)
     {
         int k = this->E_Luch.size();
-        int nn = 2;
+        int nn = this->geo.MF - 1;
         auto A = new Cell();
         A->Yzels.push_back(this->G_Luch[k - 1]->Yzels[j]);
         A->Yzels.push_back(this->G_Luch[k - 1]->Yzels[j + 1]);
@@ -1070,7 +1111,7 @@ void Setka::Construct_initial()
         int k = this->B_Luch.size();
         auto yz1 = this->B_Luch[k - 1]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 1];
         auto yz2 = this->B_Luch[k - 1]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 2];
-        auto yz3 = this->Yzel_zav_1[0];
+        auto yz3 = this->H_Luch[0]->Yzels[1];
         auto yz4 = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 1];
 
         auto A = new Cell();
@@ -1081,27 +1122,13 @@ void Setka::Construct_initial()
         this->All_Cell.push_back(A);
 
 
-        //2
-        k = this->B_Luch.size();
-        yz1 = this->B_Luch[k - 1]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 2];
-        yz2 = this->B_Luch[k - 1]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 3];
-        yz3 = this->F_Luch[0]->Yzels[1];
-        yz4 = this->Yzel_zav_1[0];
-
-        A = new Cell();
-        A->Yzels.push_back(yz1);
-        A->Yzels.push_back(yz2);
-        A->Yzels.push_back(yz3);
-        A->Yzels.push_back(yz4);
-        this->All_Cell.push_back(A);
-
 
         //3
         for (int i = 0; i < 3; i++)
         {
             yz1 = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 1 + i];
-            yz2 = this->Yzel_zav_1[i];
-            yz3 = this->Yzel_zav_1[i + 1];
+            yz2 = this->H_Luch[0]->Yzels[1 + i];
+            yz3 = this->H_Luch[0]->Yzels[2 + i];
             yz4 = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 2 + i];
 
             A = new Cell();
@@ -1114,39 +1141,9 @@ void Setka::Construct_initial()
 
         //4 
         yz1 = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 1 + 3];
-        yz2 = this->Yzel_zav_1[3];
+        yz2 = this->H_Luch[0]->Yzels[4];
         yz3 = this->D_Luch[0]->Yzels[1];
         yz4 = this->C_Luch[0]->Yzels[this->geo.M0 + this->geo.M1 + this->geo.M11 + 2 + 3];
-
-        A = new Cell();
-        A->Yzels.push_back(yz1);
-        A->Yzels.push_back(yz2);
-        A->Yzels.push_back(yz3);
-        A->Yzels.push_back(yz4);
-        this->All_Cell.push_back(A);
-
-        //5 
-        for (int i = 0; i < 3; i++)
-        {
-            yz1 = this->Yzel_zav_1[i];
-            yz2 = this->F_Luch[0]->Yzels[1 + i];
-            yz3 = this->F_Luch[0]->Yzels[2 + i];
-            yz4 = this->Yzel_zav_1[i + 1];
-
-            A = new Cell();
-            A->Yzels.push_back(yz1);
-            A->Yzels.push_back(yz2);
-            A->Yzels.push_back(yz3);
-            A->Yzels.push_back(yz4);
-            this->All_Cell.push_back(A);
-        }
-
-
-        //6 
-        yz1 = this->Yzel_zav_1[3];
-        yz2 = this->F_Luch[0]->Yzels[4];
-        yz3 = this->F_Luch[0]->Yzels[5];
-        yz4 = this->D_Luch[0]->Yzels[1];
 
         A = new Cell();
         A->Yzels.push_back(yz1);
